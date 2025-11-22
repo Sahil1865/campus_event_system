@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Events | CampusConnect</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <script th:src="@{/js/script.js}" defer></script>
+</head>
+
+<body onload="loadMyRegistrations()">
+
+<nav class="navbar glass">
+    <h1 class="logo">Campus<span>Connect</span></h1>
+    <button class="btn" onclick="window.location.href='/events'">Events</button>
+    <button class="btn" onclick="logoutUser()">Logout</button>
+</nav>
+
+<main class="events-section">
+    <h2>My Registered Events</h2>
+
+    <div id="registrationList" class="event-grid"></div>
+</main>
+
+<div id="successPopup" class="popup hidden glass">
+    <div class="popup-content">
+        <h2 id="popupTitle"></h2>
+        <p id="popupMessage"></p>
+        <button class="btn glow" onclick="closePopup()">OK</button>
+    </div>
+</div>
+
+</body>
+</html>

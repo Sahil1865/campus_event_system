@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CampusConnect | Events</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <script th:src="@{/js/script.js}" defer></script>
+</head>
+
+<body>
+<!-- Navbar -->
+<nav class="navbar glass">
+    <div class="nav-left">
+        <h1 class="logo">Campus<span>Connect</span></h1>
+    </div>
+    <div class="nav-right">
+        <button class="btn" id="createEventBtn" onclick="checkAdminRole()">Create Event</button>
+        <button class="btn" onclick="logoutUser()">Logout</button>
+        <button class="btn" onclick="window.location.href='/my-registrations'">My Events</button>
+    </div>
+</nav>
+
+<!-- Events Section -->
+<main class="events-section">
+    <div class="section-header">
+        <h2>Upcoming Events</h2>
+        <div class="search-bar glass">
+            <input type="text" id="searchInput" placeholder="Search events by title..." onkeyup="filterEvents()">
+        </div>
+    </div>
+
+    <div class="event-grid">
+        <!-- Loop through events using Thymeleaf -->
+        <div class="event-card glass" th:each="event : ${events}">
+            <img th:src="@{${event.eventImageUrl != null ? event.eventImageUrl : '/img/default.webp'}}"
+                 class="event-img">
+
+
+
+
+
+            <div class="event-info">
+                <h3 th:text="${event.eventTitle}">Event Title</h3>
+                <p class="desc" th:text="${event.eventDescription}">Event description goes here...</p>
+
+                <p><strong>Start Time:</strong>
+                    <span th:text="${#temporals.format(event.startTime, 'dd MMM yyyy, hh:mm a')}"></span>
+                </p>
+
+                <p><strong>End Time:</strong>
+                    <span th:text="${#temporals.format(event.endTime, 'dd MMM yyyy, hh:mm a')}"></span>
+                </p>
+
+                <p><strong>Location:</strong>
+                    <span th:text="${event.eventLocation}">Campus Auditorium</span>
+                </p>
+
+                <p><strong>Max Seats:</strong>
+                    <span th:text="${event.eventAttendees}"></span>
+                </p>
+
+                <p><strong>Price: Rs</strong>
+                    <span th:text="${event.eventPrice}"></span>
+                </p>
+
+                <!-- ⭐ Created By -->
+                <p><strong>Created By:</strong>
+                    <span th:text="${event.createdByName}">Admin</span>
+                </p>
+
+                <!-- ⭐ Categories -->
+                <p><strong>Categories:</strong>
+                    <span th:each="cat, iter : ${event.categoryNames}">
+            <span class="category-tag" th:text="${cat}"></span>
+        </span>
+                </p>
+
+                <button class="btn glow register-btn"
+                        th:data-event-id="${event.eventId}"
+                        onclick="registerForEvent(this)">Register</button>
+            </div>
+
+        </div>
+    </div>
+</main>
+<div id="successPopup" class="popup hidden glass">
+    <div class="popup-content">
+        <h2 id="popupTitle">Registration Successful!</h2>
+        <p id="popupMessage">You have been successfully registered for this event 🎉</p>
+        <button class="btn glow" onclick="closePopup()">OK</button>
+    </div>
+</div>
+</body>
+</html>

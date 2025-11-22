@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Create Event | CampusConnect</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+
+<body>
+<!-- Navbar -->
+<nav class="navbar glass">
+    <div class="nav-left">
+        <h1 class="logo">Campus<span>Connect</span></h1>
+    </div>
+    <div class="nav-right">
+        <button class="btn" onclick="window.location.href='/events'">Events</button>
+        <button class="btn" onclick="logoutUser()">Logout</button>
+    </div>
+</nav>
+
+<br><br><br><br>
+
+<!-- Create Event Section -->
+<div class="form-container glass">
+    <h2>Create a New Event</h2>
+
+    <form id="createEventForm" enctype="multipart/form-data">
+
+        <label>Event Title:</label>
+        <input type="text" id="eventTitle" class="glass-input" required>
+
+        <label>Description:</label>
+        <textarea id="eventDescription" class="glass-input" required></textarea>
+
+        <label>Location:</label>
+        <input type="text" id="eventLocation" class="glass-input" required>
+
+        <label>Start Time:</label>
+        <input type="datetime-local" id="eventStartTime" class="glass-input" required>
+
+        <label>End Time:</label>
+        <input type="datetime-local" id="eventEndTime" class="glass-input" required>
+
+        <label>Max Seats:</label>
+        <input type="number" id="eventAttendees" class="glass-input" required>
+
+        <label>Price (Rs):</label>
+        <input type="number" id="eventPrice" class="glass-input" required>
+
+        <label>Categories:</label>
+        <select id="categorySelect" class="glass-input" multiple required>
+        </select>
+        <p style="color:#aaa; font-size:12px;">Hold CTRL to select multiple</p>
+
+
+        <!-- DRAG & DROP UPLOAD BOX -->
+        <label>Event Image:</label>
+        <div class="upload-box glass" id="uploadBox">
+            <p id="uploadText">Drag & drop image here or click to select</p>
+            <img id="previewImg" class="hidden preview-img">
+            <input type="file" id="imageFile" hidden accept="image/*">
+        </div>
+
+        <button type="submit" class="btn-submit">Create Event</button>
+    </form>
+</div>
+
+<!-- Popup -->
+<div id="successPopup" class="popup hidden glass">
+    <div class="popup-content">
+        <h2 id="popupTitle">Success</h2>
+        <p id="popupMessage"></p>
+        <button class="btn glow" onclick="closePopup()">OK</button>
+    </div>
+</div>
+
+<script>
+    // ---------------- Drag & Drop Upload ----------------
+    const uploadBox = document.getElementById("uploadBox");
+    const fileInput = document.getElementById("imageFile");
+    const previewImg = document.getElementById("previewImg");
+    const uploadText = document.getElementById("uploadText");
+
+    uploadBox.addEventListener("click", () => fileInput.click());
+
+    uploadBox.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        uploadBox.classList.add("drag-over");
+    });
+
+    uploadBox.addEventListener("dragleave", () => {
+        uploadBox.classList.remove("drag-over");
+    });
+
+    uploadBox.addEventListener("drop", (e) => {
+        e.preventDefault();
+        uploadBox.classList.remove("drag-over");
+        const file = e.dataTransfer.files[0];
+        fileInput.files = e.dataTransfer.files;
+        handleFile(file);
+    });
+
+    fileInput.addEventListener("change", () => handleFile(fileInput.files[0]));
+
+    function handleFile(file) {
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) {
+            showPopup("Invalid Image", "Max file size is 5MB.");
+            fileInput.value = "";
+            return;
+        }
+
+        const validTypes = ["image/jpeg", "image/png", "image/webp"];
+        if (!validTypes.includes(file.type)) {
+            showPopup("Invalid Format", "Only JPG, PNG, or WEBP allowed.");
+            fileInput.value = "";
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            previewImg.src = reader.result;
+            previewImg.classList.remove("hidden");
+            uploadText.classList.add("hidden");
+        };
+        reader.readAsDataURL(file);
+    }
+
+
+    // ---------------- CREATE EVENT SUBMIT ----------------
+    document.getElementById("createEventForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const userRole = localStorage.getItem("loggedUserRole");
+
+        if (userRole !== "ADMIN") {
+            showPopup("Access Denied", "Only admins can create events.");
+            return;
+        }
+
+        const file = fileInput.files[0];
+        if (!file) {
+            showPopup("Upload Required", "Please upload an image.");
+            return;
+        }
+
+        const selectedCategories = Array.from(
+        document.getElementById("categorySelect").selectedOptions
+        ).map(opt => opt.value);
+
+        const formData = new FormData();
+
+        const eventJson = {
+            eventTitle: document.getElementById("eventTitle").value,
+            eventDescription: document.getElementById("eventDescription").value,
+            eventLocation: document.getElementById("eventLocation").value,
+            startTime: document.getElementById("eventStartTime").value,
+            endTime: document.getElementById("eventEndTime").value,
+            eventAttendees: document.getElementById("eventAttendees").value,
+            eventPrice: document.getElementById("eventPrice").value,
+            createdById: localStorage.getItem("loggedUserId"),
+            categoryIds: selectedCategories
+        };
+
+        formData.append("event",
+        new Blob([JSON.stringify(eventJson)], { type: "application/json" })
+        );
+
+        formData.append("imageFile", document.getElementById("imageFile").files[0]);
+
+// send request
+const res = await fetch("/api/events/create", {
+    method: "POST",
+    body: formData
+});
+
+
+
+        if (res.ok) {
+            showPopup("Event Created", "Your event has been successfully added!");
+            document.getElementById("createEventForm").reset();
+            previewImg.classList.add("hidden");
+            uploadText.classList.remove("hidden");
+        } else {
+            const errorText = await res.text();
+            showPopup("Error", errorText || "Failed to create event.");
+        }
+    });
+
+
+    // ---------------- POPUP ----------------
+    function showPopup(title, message) {
+        document.getElementById("popupTitle").innerText = title;
+        document.getElementById("popupMessage").innerText = message;
+        document.getElementById("successPopup").classList.remove("hidden");
+    }
+
+    function closePopup() {
+        document.getElementById("successPopup").classList.add("hidden");
+    }
+
+
+    // ---------------- LOGOUT ----------------
+    function logoutUser() {
+        localStorage.clear();
+        window.location.href = "/";
+    }
+
+//categories handler
+    async function loadCategories() {
+    const res = await fetch("/api/categories");
+    const categories = await res.json();
+
+    const select = document.getElementById("categorySelect");
+    select.innerHTML = "";
+
+    categories.forEach(cat => {
+        const option = document.createElement("option");
+        option.value = cat.categoryId;
+        option.textContent = cat.categoryName;
+        select.append(option);
+    });
+}
+
+// Load categories on page load
+loadCategories();
+
+
+</script>
+
+</body>
+</html>
